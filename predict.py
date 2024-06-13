@@ -2,7 +2,8 @@ from typing import Optional
 from scipy.io.wavfile import write as write_wav
 from cog import BasePredictor, Input, Path, BaseModel
 from bark import SAMPLE_RATE, generate_audio, preload_models, save_as_prompt
-from bark.generation import ALLOWED_PROMPTS
+from bark.api import semantic_to_waveform
+from bark.generation import ALLOWED_PROMPTS, generate_text_semantic
 import numpy as np
 
 
@@ -24,15 +25,7 @@ class Predictor(BasePredictor):
             description="history choice for audio cloning, choose from the list",
             default=None,
             choices=sorted(list(ALLOWED_PROMPTS)),
-        ),
-        text_temp: float = Input(
-            description="generation temperature (1.0 more diverse, 0.0 more conservative)",
-            default=0.7,
-        ),
-        waveform_temp: float = Input(
-            description="generation temperature (1.0 more diverse, 0.0 more conservative)",
-            default=0.7,
-        ),
+        )
     ) -> Path:
         """Run a single prediction on the model"""
 
@@ -42,12 +35,14 @@ class Predictor(BasePredictor):
 
         pieces = []
         for sentence in sentences:
-            audio_array = generate_audio(
+            semantic_tokens = generate_text_semantic(
                 sentence,
                 history_prompt=history_prompt,
-                text_temp=text_temp,
-                waveform_temp=waveform_temp,
+                min_eos_p=0.05
             )
+
+            audio_array = semantic_to_waveform(semantic_tokens, history_prompt=history_prompt)
+
             pieces += [audio_array, silence.copy()]
 
         audio = np.concatenate(pieces)
