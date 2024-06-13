@@ -23,7 +23,8 @@ dependencies = [
     "tokenizers",
     "torch",
     "tqdm",
-    "transformers"
+    "transformers",
+    "numpy"
 ]
 
 [project.urls]

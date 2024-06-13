@@ -3,6 +3,7 @@ from scipy.io.wavfile import write as write_wav
 from cog import BasePredictor, Input, Path, BaseModel
 from bark import SAMPLE_RATE, generate_audio, preload_models, save_as_prompt
 from bark.generation import ALLOWED_PROMPTS
+import numpy as np
 
 
 class Predictor(BasePredictor):
