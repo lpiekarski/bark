@@ -3,11 +3,7 @@ from scipy.io.wavfile import write as write_wav
 from cog import BasePredictor, Input, Path, BaseModel
 from bark import SAMPLE_RATE, generate_audio, preload_models, save_as_prompt
 from bark.generation import ALLOWED_PROMPTS
-
-
-class ModelOutput(BaseModel):
-    prompt_npz: Optional[Path]
-    audio_out: Path
+import nltk
 
 
 class Predictor(BasePredictor):
@@ -29,11 +25,6 @@ class Predictor(BasePredictor):
             default=None,
             choices=sorted(list(ALLOWED_PROMPTS)),
         ),
-        custom_history_prompt: Path = Input(
-            description="Provide your own .npz file with history choice for audio cloning, this will override the "
-            "previous history_prompt setting",
-            default=None,
-        ),
         text_temp: float = Input(
             description="generation temperature (1.0 more diverse, 0.0 more conservative)",
             default=0.7,
@@ -42,27 +33,25 @@ class Predictor(BasePredictor):
             description="generation temperature (1.0 more diverse, 0.0 more conservative)",
             default=0.7,
         ),
-        output_full: bool = Input(
-            description="return full generation as a .npz file to be used as a history prompt", default=False
-        ),
-    ) -> ModelOutput:
+    ) -> Path:
         """Run a single prediction on the model"""
 
-        if custom_history_prompt is not None:
-            history_prompt = str(custom_history_prompt)
+        prompt = prompt.replace("\n", " ").strip()
+        sentences = nltk.sent_tokenize(prompt)
+        silence = np.zeros(int(0.25 * SAMPLE_RATE))  # quarter of silence
 
-        audio_array = generate_audio(
-            prompt,
-            history_prompt=history_prompt,
-            text_temp=text_temp,
-            waveform_temp=waveform_temp,
-            output_full=output_full,
-        )
+        pieces = []
+        for sentence in sentences:
+            audio_array = generate_audio(
+                sentence,
+                history_prompt=history_prompt,
+                text_temp=text_temp,
+                waveform_temp=waveform_temp,
+            )
+            pieces += [audio_array, silence.copy()]
+
+        audio = np.concatenate(pieces)
+
         output = "/tmp/audio.wav"
-        if not output_full:
-            write_wav(output, SAMPLE_RATE, audio_array)
-            return ModelOutput(audio_out=Path(output))
-        out_npz = "/tmp/prompt.npz"
-        save_as_prompt(out_npz, audio_array[0])
-        write_wav(output, SAMPLE_RATE, audio_array[-1])
-        return ModelOutput(prompt_npz=Path(out_npz), audio_out=Path(output))
+        write_wav(output, SAMPLE_RATE, audio)
+        return Path(output)
