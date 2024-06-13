@@ -1,5 +1,7 @@
 build:
   gpu: true
+  system_packages:
+    - "ffmpeg"
   cuda: "11.8"
   python_version: "3.10"
   python_packages:

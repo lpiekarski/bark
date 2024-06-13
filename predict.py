@@ -5,6 +5,7 @@ from bark import SAMPLE_RATE, generate_audio, preload_models, save_as_prompt
 from bark.api import semantic_to_waveform
 from bark.generation import ALLOWED_PROMPTS, generate_text_semantic
 import numpy as np
+import os
 
 
 class Predictor(BasePredictor):
@@ -48,5 +49,7 @@ class Predictor(BasePredictor):
         audio = np.concatenate(pieces)
 
         output = "/tmp/audio.wav"
+        final_output = "/tmp/audio.mp3"
         write_wav(output, SAMPLE_RATE, audio)
-        return Path(output)
+        os.system(f"ffmpeg -i {output} -codec:a libmp3lame -q:a 2 {final_output}")
+        return Path(final_output)
