@@ -3,7 +3,6 @@ from scipy.io.wavfile import write as write_wav
 from cog import BasePredictor, Input, Path, BaseModel
 from bark import SAMPLE_RATE, generate_audio, preload_models, save_as_prompt
 from bark.generation import ALLOWED_PROMPTS
-import nltk
 
 
 class Predictor(BasePredictor):
@@ -37,7 +36,7 @@ class Predictor(BasePredictor):
         """Run a single prediction on the model"""
 
         prompt = prompt.replace("\n", " ").strip()
-        sentences = nltk.sent_tokenize(prompt)
+        sentences = [sent.strip() + "." if not sent.strip().endswith(".") else sent.strip() for sent in prompt.split(". ")]
         silence = np.zeros(int(0.25 * SAMPLE_RATE))  # quarter of silence
 
         pieces = []
