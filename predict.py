@@ -26,12 +26,19 @@ class Predictor(BasePredictor):
             description="history choice for audio cloning, choose from the list",
             default=None,
             choices=sorted(list(ALLOWED_PROMPTS)),
+        ),
+        split_on: str = Input(
+            description="Split on dot or newline",
+            default=None,
+            choices=["dot", "newline"],
         )
     ) -> Path:
         """Run a single prediction on the model"""
-
-        prompt = prompt.replace("\n", " ").strip()
-        sentences = [sent.strip() + "." if not sent.strip().endswith(".") else sent.strip() for sent in prompt.split(". ")]
+        if split_on == "dot":
+            prompt = prompt.replace("\n", " ").strip()
+            sentences = [sent.strip() + "." if not sent.strip().endswith(".") else sent.strip() for sent in prompt.split(". ")]
+        else:
+            sentences = [chunk.strip() for chunk in prompt.split("\n") if chunk.strip() != ""]
         silence = np.zeros(int(0.25 * SAMPLE_RATE))  # quarter of silence
 
         pieces = []
